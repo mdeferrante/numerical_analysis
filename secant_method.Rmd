@@ -1,0 +1,77 @@
+---
+title: "Secant Method"
+author: "Morgan de Ferrante"
+date: "January 8, 2018"
+output: pdf_document
+---
+
+##Secant Method Formula
+The secant method is a root-finding method that uses recurrence to solve for a given function. 
+
+$$x_n = x_{n-1} - f(x_{n-1})\frac{x_{n-1} -x_{n-2}}{f(x_{n-1}) -f(x_{n-2})}$$
+
+The method begins with two values, $x_0$ and $x_1$, which will converge to the true value of the root if they are sufficiently close to it. Thus iteration of the method begins with the following: 
+
+$$x_2 = x_{1} - f(x_{1})\frac{x_{1} -x_{0}}{f(x_{1}) -f(x_{0})}$$
+The following secant_method function generates a list of the iterative values, and a plot of $x_n$ versus $f(x_n)$. The secant_method function takes in a given function for which we wish to estimate roots, initial $x_0$ and $x_1$ values, and the number of desired iterations.
+
+```{r}
+library(ggplot2)
+
+secant_method <- function(f, x0, x1, iter = 5) {
+  df_points <- data.frame(x1 = numeric(0), 
+                          y1 = numeric(0),
+                          x2 = numeric(0),
+                          y2 = numeric(0))
+
+  xold <- x0
+  xnew <- x1
+  cat("Starting values are:", xold, " and ", xnew, "\n")
+  
+  # the algorithm which generates each xn value 
+  for (i in 1:iter) {
+    fx_new <- f(xnew)
+    fx_old <- f(xold)
+    xn_1 <- xnew - fx_new*(xnew - xold)/(fx_new - fx_old)
+    f_xn_1 <- f(xn_1)
+    df_points[2*i - 1,] <- c(xold, fx_old , xnew, fx_new)
+    df_points[2*i,] <- c(xn_1, 0 , xn_1, f_xn_1) 
+    
+    xold <- xnew
+    xnew <- xn_1
+    cat("Next x values are:", xold, " and ", xnew, "\n")
+  }
+  
+  # determines the limits for the graph
+  x_start <- min(df_points$x1, df_points$x2, x0 - .1) # start is the min of these values
+  x_end <- max(df_points$x1, df_points$x2, x0 + .1)  # end is the max of these values
+  x <- seq(x_start, x_end, length.out = 200)
+  fx <- rep(NA, length(x))
+  for (i in seq_along(x)) {
+    fx[i] <- f(x[i])
+  }
+  function_data <- data.frame(x, fx)
+  
+  # uses ggplot to plot the function and the segments for each iteration
+  p <- ggplot(function_data, aes(x = x, y = fx)) + 
+    geom_line(colour = "blue", size = 1) + 
+    geom_segment(aes(x = x1, y = y1, xend = x2, yend = y2), data = df_points) + 
+    geom_abline(intercept = 0, slope = 1) + 
+    geom_abline(intercept = 0, slope = 0) +
+    labs(y = "f(x)", title = "Secant Method for f(x) = log(x) - exp(-x)")
+  
+  print(p)
+  return(cat("The estimated root for the function is", xnew)) 
+}
+```
+
+##Example
+
+This example estimates the zero for the function $f(x) = log(x) - e^{-x}$ using the initial values of $x_0$ and $x_1$. 
+
+```{r}
+f <- function(x) log(x) - exp(-x)
+
+secant_method(f, 1, 2, iter = 5)
+```
+
